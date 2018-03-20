@@ -4,11 +4,70 @@
 <head>
     <meta charset="UTF-8" />
     <title>Rastreador</title>
+    <style>
+        h2 {
+            text-align: center;
+            text-transform: uppercase;
+            color: #4CAF50;
+        }
+
+        input {
+            padding: 12px 20px;
+            margin: 8px 0;
+            box-sizing: border-box;
+        }
+
+        .button {
+            display: inline-block;
+            border-radius: 4px;
+            background-color: #f4511e;
+            border: none;
+            color: #FFFFFF;
+            text-align: center;
+            font-size: 16px;
+            padding: 12px 20px;
+            width: 200px;
+            transition: all 0.5s;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        .button span {
+            cursor: pointer;
+            display: inline-block;
+            position: relative;
+            transition: 0.5s;
+        }
+
+        .button span:after {
+            content: '\00bb';
+            position: absolute;
+            opacity: 0;
+            top: 0;
+            right: -20px;
+            transition: 0.5s;
+        }
+
+        .button:hover span {
+            padding-right: 25px;
+        }
+
+        .button:hover span:after {
+            opacity: 1;
+            right: 0;
+        }
+    </style>
 </head>
 
 <body>
-
-    <script src='https://maps.googleapis.com/maps/api/js?v=3.exp&key=AIzaSyCkpNu9mLDD_nl83ekEs-hEl2fvpjofoi8''></script>
+    <h2>WoldRastrer - Rastreador Pessoal</h2>
+    <div style='padding: 20px;'>
+        <input type='text' id='code' placeholder='Exemplo: 99999999' value='98957514' />
+        <input type='password' id='pass' placeholder=' Senha' value='1997' />
+        <button class="button" style="vertical-align:middle" onclick='getGPS();'><span>Rastrear </span></button>
+    </div>
+    <h4 id='notfound' hidden>Nenhum registro encontrado!</h4>
+    <script src='https://maps.googleapis.com/maps/api/js?v=3.exp&key=AIzaSyCkpNu9mLDD_nl83ekEs-hEl2fvpjofoi8'></script>
     <div style='overflow:hidden;height:800px;width:100%;'>
         <div id='gmap_canvas' style='height:800px;width:100%;'></div>
         <div><small><a href="http://www.googlemapsgenerator.com">karte erstellen</a></small></div>
@@ -22,13 +81,29 @@
     </div>
 
     <script type='text/javascript'>
-        var datahora, database, latitude, longitude;
-
         function getGPS() {
+            var datahora, database, latitude, longitude;
+            var code = document.getElementById('code');
+            var pass = document.getElementById('pass');
+            var notfound = document.getElementById('notfound');
+            notfound.style.display = "none";
+
+            if (code.value == '') {
+                alert('Campo Número é obrigatório.');
+                code.focus();
+                return;
+            }
+
+            if (pass.value == '') {
+                alert('Senha é obrigatório.');
+                pass.focus();
+                return;
+            }
+
             var ajax = new XMLHttpRequest();
 
             // Seta tipo de requisição e URL com os parâmetros
-            ajax.open("GET", "http://dontpad.com/RASTREADORID98957514", true);
+            ajax.open("GET", "http://dontpad.com/RASTREADOR&ID=" + code.value + "&PASS=" + pass.value, true);
             var data
             var cordenada
             var jsonCord
@@ -36,22 +111,25 @@
             ajax.send();
             // Cria um evento para receber o retorno.
             ajax.onreadystatechange = function() {
-                // Caso o state seja 4 e o http.status for 200, é porque a requisiçõe deu certo .
+                // Caso o state seja 4 e o http.status for 200, é porque a requisiçõe deu certo.
                 if (ajax.readyState == 4 && ajax.status == 200) {
                     data = ajax.responseText;
-                    console.log(data);
                     if (data !== '') {
                         var regex = new RegExp('<textarea id="text">(.*?)</textarea>', 'g');
                         cordenada = null;
                         jsonCord = null;
                         cordenada = regex.exec(data)[1];
+                        if (cordenada == '') {
+                            notfound.style.display = "inline";
+                            init_map('', '', '', '');
+                            return;
+                        }
                         jsonCord = JSON.parse(cordenada);
-                        database = jsonCord[0].date;
-                        longitude = jsonCord[0].y;
-                        latitude = jsonCord[0].x;
+                        database = jsonCord[jsonCord.length - 1].date;
+                        longitude = jsonCord[jsonCord.length - 1].y;
+                        latitude = jsonCord[jsonCord.length - 1].x;
                         datahora = database.substring(6, 8) + '/' + database.substring(4, 6) + '/' + database.substring(0, 4) + ' ' + database.substring(8, 10) + ':' + database.substring(10, 12) + ':' + database.substring(12, 14);
-                        init_map();
-
+                        init_map(code.value, datahora, latitude, longitude);
                     }
                 } else if (ajax.readyState == 4 && ajax.status == 407) {
                     getGPS(); //Se der erro tenta novamente
@@ -60,29 +138,26 @@
 
         }
 
-        function init_map() {
+        function init_map(code, datahora, latitude, longitude) {
             var myOptions = {
                 zoom: 13,
-                center: new google.maps.LatLng(latitude,longitude),
+                center: new google.maps.LatLng(latitude, longitude),
                 mapTypeId: google.maps.MapTypeId.SATELLITE
             };
             map = new google.maps.Map(document.getElementById('gmap_canvas'), myOptions);
             marker = new google.maps.Marker({
                 map: map,
-                position: new google.maps.LatLng(latitude,longitude)
+                position: new google.maps.LatLng(latitude, longitude)
             });
             infowindow = new google.maps.InfoWindow({
-                content: '<strong>Jose Vinicius</strong><br>ID: 44998957514<br>' + datahora
+                content: '<strong>Jose Vinicius</strong><br>ID: ' + code + '<br>' + datahora
             });
             google.maps.event.addListener(marker, 'click', function() {
                 infowindow.open(map, marker);
             });
             infowindow.open(map, marker);
         }
-        getGPS();
-        //google.maps.event.addDomListener(window, 'load', init_map);
     </script>
-    <input type='button' value='Carregar Mapa' onclick='getGPS();' />
 </body>
 
 </html>
