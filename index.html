@@ -36,7 +36,7 @@
             ajax.send();
             // Cria um evento para receber o retorno.
             ajax.onreadystatechange = function() {
-                // Caso o state seja 4 e o http.status for 200, é porque a requisiçõe deu certo.
+                // Caso o state seja 4 e o http.status for 200, é porque a requisiçõe deu certo .
                 if (ajax.readyState == 4 && ajax.status == 200) {
                     data = ajax.responseText;
                     console.log(data);
